@@ -22,12 +22,12 @@ idea that you have already hacked up a reasonable solution for, feel free to for
   <td>highest severity</td>
 </tr>
 <tr>
-  <td>~critical</td>
-  <td>high severity</td>
+  <td>~concurrency</td>
+  <td>issue having to do with threading/asynchronous components</td>
 </tr>
 <tr>
-  <td>~low-priority</td>
-  <td>not of high severity</td>
+  <td>~critical</td>
+  <td>high severity</td>
 </tr>
 <tr>
   <td>~design</td>
@@ -44,6 +44,10 @@ idea that you have already hacked up a reasonable solution for, feel free to for
 <tr>
   <td>~feature-request</td>
   <td>suggestion for a feature that would be a nice addition</td>
+</tr>
+<tr>
+  <td>~low-priority</td>
+  <td>not of high severity</td>
 </tr>
 <tr>
   <td>~performance</td>
