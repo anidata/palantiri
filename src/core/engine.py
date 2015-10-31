@@ -16,6 +16,9 @@ class Engine(object):
     def cleanup(self):
         return
 
+    def clone(self):
+        raise errors.EngineError("clone not implemented")
+
 class DefaultEngine(Engine):
     def __init__(self, data = None, headers = {}, origin_req_host = None,
             unverifyable = False, method = None):
@@ -31,9 +34,20 @@ class DefaultEngine(Engine):
                 self.origin_req_host, self.unverifyable, self.method)
         return common.Website(url, urllib.request.urlopen(req).read())
 
+    def clone(self):
+        return DefaultEngine(self.data, self.headers, self.origin_req_host,
+                self.unverifyable, self.method)
+
 class BaseSeleniumEngine(Engine):
     def __init__(self):
         self.driver = None
+        return
+
+    def get_source(self):
+        return self.driver.page_source
+
+    def cleanup(self):
+        self.driver.quit()
         return
 
     def setup(self):
@@ -47,12 +61,8 @@ class BaseSeleniumEngine(Engine):
     def get_url(self):
         return self.driver.current_url
 
-    def get_source(self):
-        return self.driver.page_source
-
-    def cleanup(self):
-        self.driver.quit()
-        return
+    def clone(self):
+        return BaseSeleniumEngine()
 
 class SeleniumEngine(BaseSeleniumEngine):
     def __init__(self):
@@ -66,6 +76,13 @@ class SeleniumEngine(BaseSeleniumEngine):
                 super(SeleniumEngine, self).get_source()
                 )
 
+    def cleanup(self):
+        super(SeleniumEngine, self).cleanup()
+        return
+
+    def clone(self):
+        return SeleniumEngine()
+
 
 class TimedWait(BaseSeleniumEngine):
     def __init__(self, delay, parent = None):
@@ -75,12 +92,6 @@ class TimedWait(BaseSeleniumEngine):
         self.parent = parent
         return
 
-    def get_source(self):
-        return self.parent.get_source()
-
-    def get_url(self):
-        return self.parent.get_url()
-
     def get_page_source(self, url):
         self.parent.get_page_source(url)
         time.sleep(self.delay)
@@ -88,3 +99,17 @@ class TimedWait(BaseSeleniumEngine):
                 self.parent.get_url(),
                 self.parent.get_source()
                 )
+
+    def cleanup(self):
+        self.parent.cleanup()
+        return
+
+    def clone(self):
+        return TimedWait(self.delay, self.parent.clone())
+
+    def get_source(self):
+        return self.parent.get_source()
+
+    def get_url(self):
+        return self.parent.get_url()
+
