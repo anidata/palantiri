@@ -22,12 +22,12 @@ idea that you have already hacked up a reasonable solution for, feel free to for
   <td>highest severity</td>
 </tr>
 <tr>
-  <td>~critical</td>
-  <td>high severity</td>
+  <td>~concurrency</td>
+  <td>issue having to do with threading/asynchronous components</td>
 </tr>
 <tr>
-  <td>~low-priority</td>
-  <td>not of high severity</td>
+  <td>~critical</td>
+  <td>high severity</td>
 </tr>
 <tr>
   <td>~design</td>
@@ -46,12 +46,20 @@ idea that you have already hacked up a reasonable solution for, feel free to for
   <td>suggestion for a feature that would be a nice addition</td>
 </tr>
 <tr>
+  <td>~low-priority</td>
+  <td>not of high severity</td>
+</tr>
+<tr>
   <td>~performance</td>
   <td>a bug that is impacting the performance (typically speed) of the program</td>
 </td>
 <tr>
   <td>~procrastination-at-its-best</td>
   <td>something that should be implemented ASAP, but someone is too lazy :smile: </td>
+</tr>
+<tr>
+  <td>~research</td>
+  <td>an issue that may not include code at all, but might require breaking open a book digging through documentation
 </tr>
 <tr>
   <td>~testing</td>

@@ -2,14 +2,16 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-from . import common
 import urllib.request
 import time
 import selenium.webdriver
 
+from . import errors
+from . import common
+
 class Engine(object):
     def get_page_source(self, url):
-        raise EngineError("get_page_source not implemented")
+        raise errors.EngineError("get_page_source not implemented")
 
     def cleanup(self):
         return
@@ -69,7 +71,7 @@ class TimedWait(BaseSeleniumEngine):
     def __init__(self, delay, parent = None):
         self.delay = delay
         if not parent:
-            raise common.EngineError("Selenium Decorator must wrap a Selenium Engine object")
+            raise errors.EngineError("Selenium Decorator must wrap a Selenium Engine object")
         self.parent = parent
         return
 

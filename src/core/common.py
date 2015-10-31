@@ -3,7 +3,11 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import threading
+from . import errors
 
+# Technically I've read that many operations are thread-safe on Python's
+# list implementation, so this may not be necessary, but I think I'd rather
+# err on the side of caution at least for now
 class SharedList(object):
     def __init__(self, lst = []):
         self.mutex = threading.Lock()
@@ -34,14 +38,6 @@ class SharedList(object):
         except:
             self.mutex.release()
             return False
-
-class EngineError(Exception):
-    def __init__(self, value):
-        self.value = value
-        return
-
-    def __str__(self):
-        return repr(self.value)
 
 class Website(object):
     def __init__(self, url = None, source = None):
