@@ -10,6 +10,9 @@ from . import errors
 from . import common
 
 class Engine(object):
+    def __init__(self):
+        return
+
     def get_page_source(self, url):
         raise errors.EngineError("get_page_source not implemented")
 
@@ -30,9 +33,12 @@ class DefaultEngine(Engine):
         return
 
     def get_page_source(self, url):
-        req = urllib.request.Request( url, self.data, self.headers,
-                self.origin_req_host, self.unverifyable, self.method)
-        return common.Website(url, urllib.request.urlopen(req).read())
+        if url:
+            req = urllib.request.Request( url, self.data, self.headers,
+                    self.origin_req_host, self.unverifyable, self.method)
+            return common.Website(url, str(urllib.request.urlopen(req).read()))
+        else:
+            return None
 
     def clone(self):
         return DefaultEngine(self.data, self.headers, self.origin_req_host,
@@ -44,7 +50,7 @@ class BaseSeleniumEngine(Engine):
         return
 
     def get_source(self):
-        return self.driver.page_source
+        return str(self.driver.page_source)
 
     def cleanup(self):
         self.driver.quit()
@@ -66,15 +72,19 @@ class BaseSeleniumEngine(Engine):
 
 class SeleniumEngine(BaseSeleniumEngine):
     def __init__(self):
+        super(SeleniumEngine, self).__init__()
         super(SeleniumEngine, self).setup()
         return
 
     def get_page_source(self, url):
-        super(SeleniumEngine, self).load_page(url)
-        return common.Website(
-                super(SeleniumEngine, self).get_url(),
-                super(SeleniumEngine, self).get_source()
-                )
+        if url:
+            super(SeleniumEngine, self).load_page(url)
+            return common.Website(
+                    super(SeleniumEngine, self).get_url(),
+                    super(SeleniumEngine, self).get_source()
+                    )
+        else:
+            return None
 
     def cleanup(self):
         super(SeleniumEngine, self).cleanup()
@@ -93,12 +103,15 @@ class TimedWait(BaseSeleniumEngine):
         return
 
     def get_page_source(self, url):
-        self.parent.get_page_source(url)
-        time.sleep(self.delay)
-        return common.Website(
-                self.parent.get_url(),
-                self.parent.get_source()
-                )
+        if url:
+            self.parent.get_page_source(url)
+            time.sleep(self.delay)
+            return common.Website(
+                    self.parent.get_url(),
+                    self.parent.get_source()
+                    )
+        else:
+            return None
 
     def cleanup(self):
         self.parent.cleanup()
