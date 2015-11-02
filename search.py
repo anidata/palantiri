@@ -25,6 +25,24 @@ options = {
         "area": "atlanta"
         }
 
+option_descriptions = {
+        "port": "\tPort MongoDB will use",
+        "host": "\tHost MongoDB will use",
+        "db"  : "\tMongoDB database used",
+        "collection": "Database collection used",
+        "engine": "URL fetching \"engine\" used",
+        "nthreads": "Maximum number of green threads spawned",
+        "terms": "\tComma separated list of search terms",
+        "area": "\tLocation to be searched"
+        }
+
+def get_help():
+    message = "Usage:\tpython search.py -[cgb] <site> <optional arguments>\n\tE.g. python palantiri.py -b BusinessServices --terms reliable\nOptional Arguments:"
+    for key in option_descriptions:
+        message += "\n\t"
+        message += "".join(["--", key, "\t", option_descriptions[key]])
+    print(message)
+
 def parse_needed(argv, options):
     if len(argv) > 2 and re.search("-\w+", argv[1]):
         options["site"] = argv[2]
@@ -59,8 +77,13 @@ def parse_optional(argv, options):
 
 if __name__ == "__main__":
     argv = sys.argv
+    # check for --help
+    if "--help" in argv:
+        get_help()
+        sys.exit(0)
+
     if len(argv) < 3:
-        print("Usage:\tpython search.py -[cgb] <site> <--crawler_type --terms term1,term2>\n\tE.g. python palantiri.py -g rust-lang.org --selenium 5 --terms concurrency")
+        print("Usage:\tpython search.py -[cgb] <site> <optional arguments>\n\tE.g. python palantiri.py -b Roommates --terms foo,bar\n\tuse --help for more information")
         sys.exit(1)
     else:
         parse_needed(argv, options)
