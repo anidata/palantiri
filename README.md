@@ -15,6 +15,14 @@ This is the core web crawler that will be used for the human trafficking project
   git clone https://gitlab.com/danlrobertson/palantiri.git # http
   # build
   python setup.py install
+  # test
+  python setup.py test
+```
+
+## Running
+
+```bash
+  python search.py -[cgb] <site> <optional arguments>"
 ```
 
 ## Dependencies
