@@ -21,7 +21,7 @@ options = {
         "ndelay": 1,
         "terms": None,
         "crawler": None,
-        "site": None,
+        "sites": [],
         "area": "atlanta"
         }
 
@@ -37,7 +37,7 @@ option_descriptions = {
         }
 
 def get_help():
-    message = "Usage:\tpython search.py -[cgb] <site> <optional arguments>\n\tE.g. python palantiri.py -b BusinessServices --terms reliable\nOptional Arguments:"
+    message = "Usage:\tpython search.py -[cgb] <sites> <optional arguments>\n\tE.g. python palantiri.py -b Foo,Bar --terms foo,bar\nOptional Arguments:"
     for key in option_descriptions:
         message += "\n\t"
         message += "".join(["--", key, "\t", option_descriptions[key]])
@@ -45,7 +45,7 @@ def get_help():
 
 def parse_needed(argv, options):
     if len(argv) > 2 and re.search("-\w+", argv[1]):
-        options["site"] = argv[2]
+        options["sites"] = argv[2].split(",")
         if re.search("g", argv[1]):
             print("Google search not yet implemented")
             sys.exit(1)
@@ -83,7 +83,7 @@ if __name__ == "__main__":
         sys.exit(0)
 
     if len(argv) < 3:
-        print("Usage:\tpython search.py -[cgb] <site> <optional arguments>\n\tE.g. python palantiri.py -b Roommates --terms foo,bar\n\tuse --help for more information")
+        print("Usage:\tpython search.py -[cgb] <sites> <optional arguments>\n\tE.g. python palantiri.py -b Restaurants,Roommates --terms foo,bar\n\tuse --help for more information")
         sys.exit(1)
     else:
         parse_needed(argv, options)
@@ -100,13 +100,14 @@ if __name__ == "__main__":
             conn = MongoClient(url)
             col = conn[options["db"]][options["collection"]]
 
-            master = options["crawler"](
-                    options["site"],
-                    options["terms"].split(",") if options["terms"] else [],
-                    col,
-                    options["area"],
-                    options["engine"](),
-                    int(options["nthreads"]),
-                    int(options["ndelay"])
-                    )
-            master.start()
+            for site in options["sites"]:
+                master = options["crawler"](
+                        sites,
+                        options["terms"].split(",") if options["terms"] else [],
+                        col,
+                        options["area"],
+                        options["engine"](),
+                        int(options["nthreads"]),
+                        int(options["ndelay"])
+                        )
+                master.start()
