@@ -24,6 +24,11 @@ This is the core web crawler that will be used for the human trafficking project
 ```bash
   python search.py -[cgb] <site> <optional arguments>"
 ```
+  - `-[cgb]` defines the domain name. E.g. `-b` for <area>.backpage.com
+  - `site` defines the subdirectory to search. E.g. ComputerServices
+  - optional arguments are defined with `--<argument> value`
+ 
+ A more detailed list may be obtained by running `python search.py --help`
 
 ## Dependencies
 
