@@ -1,4 +1,23 @@
-from distutils.core import setup
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+from distutils.core import setup, Command
+
+class PackageTest(Command):
+    user_options = []
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        import subprocess
+        import sys
+        errno = subprocess.call(["python", "-m", "unittest", "discover",
+            "-s", "./tests", "-p", "test_*.py"])
+        raise SystemExit(errno)
 
 setup(
         name="palantiri",
@@ -8,5 +27,6 @@ setup(
         author_email="danlrobertson89@gmail.com",
         license="MPL 2.0",
         packages=["palantiri", "palantiri.core"],
-        package_dir={'palantiri': 'src'}
+        package_dir={'palantiri': 'src'},
+        cmdclass = {'test': PackageTest}
         )
