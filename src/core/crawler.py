@@ -65,9 +65,10 @@ class SharedList(object):
             return True
 
 class EngineWrapper(threading.Thread):
-    def __init__(self, parent, group=None, target=None, name=None,
-            args=(), kwargs=None, verbose=None):
-        super(EngineWrapper, self).__init__()
+    def __init__(self, parent, group = None, name = None,
+            args = (), kwargs = None):
+        super(EngineWrapper, self).__init__(group = group, name = name,
+                args = args, kwargs = kwargs)
         self.parent = parent
         self.eng = parent.eng.clone()
         self.to_visit = parent.to_visit
@@ -89,11 +90,11 @@ class EngineWrapper(threading.Thread):
         return
 
 class SearchCrawler(object):
-    def __init__(self, kwds = [], col = None, eng = engine.DefaultEngine(),
+    def __init__(self, kwds = [], dbhandler = None, eng = engine.DefaultEngine(),
             max_threads = 10, delay = 1):
         self.max_threads = max_threads
         self.eng = eng
-        self.col = col
+        self.dbhandler = dbhandler
         self.stop = threading.Event()
         self.history = SharedList([])
         self.to_visit = SharedList([])
@@ -109,35 +110,11 @@ class SearchCrawler(object):
         raise MasterError("get_listings has not been implemented for this class")
 
     def notify(self, message):
-        try:
+        if isinstance(message, common.Website):
             self.history.append(message)
-
-            curr = self.col.find({"_id": {"$eq": message.url}}).limit(1)
-
-            dt = datetime.datetime.now()
-            # keep granularity at day
-            today = datetime.datetime(dt.year, dt.month, dt.day)
-            # document already exists
-            if curr.count() > 0:
-                # update the last day the page was indexed
-                cur = self.col.update_one(
-                        { "_id": message.url },
-                        { "$set": { "dateRange.last": today } }
-                        )
-            # if we don't already have the website insert the website
-            else:
-                cur = self.col.insert_one({
-                    "_id": message.url,
-                    "source": message.source,
-                    "dateRange": {
-                        "first": today,
-                        "last": today,
-                    }
-                    })
+            threading.Thread(target=self.dbhandler.dump(message))
             return True
-        except:
-            #if self.mutex.locked():
-                #self.mutex.release()
+        else:
             return False
 
     def start_threads(self):
@@ -146,11 +123,11 @@ class SearchCrawler(object):
             self.children.append(t)
             t.start()
 
-    def start(self):
+    def run(self):
         raise MasterError("get_listings has not been implemented for this class")
 
 class BackpageCrawler(SearchCrawler):
-    def __init__(self, site, kwds = [], col = None, area = "atlanta",
+    def __init__(self, site, kwds = [], dbhandler = None, area = "atlanta",
             eng = engine.DefaultEngine(), max_threads = 10, delay = 1):
         self.baseurl = "".join(["http://", area, ".backpage.com/", site, "/"])
         if kwds:
@@ -158,12 +135,13 @@ class BackpageCrawler(SearchCrawler):
             self.url = "?".join([self.baseurl, keywords])
         else:
             self.url = self.baseurl
-        super(BackpageCrawler, self).__init__(kwds, col, eng, max_threads, delay)
+        super(BackpageCrawler, self).__init__(kwds, dbhandler, eng, max_threads, delay)
 
     def next_page(self, soup):
         links = soup.find_all("a", href=True)
         for link in links:
-            if link.content == "Next":
+            innerHTML = link.decode_contents(formatter = "html")
+            if innerHTML == "Next":
                 return link["href"]
         return None
 
@@ -205,7 +183,7 @@ class BackpageCrawler(SearchCrawler):
             t.join()
 
 class CraigslistCrawler(SearchCrawler):
-    def __init__(self, site, kwds = [], col = None, area = "atlanta",
+    def __init__(self, site, kwds = [], dbhandler = None, area = "atlanta",
             eng = engine.DefaultEngine(), max_threads = 10, delay = 1):
         self.baseurl = "".join(["http://", area, ".craigslist.com/search/", site, "/"])
         if kwds:
@@ -213,4 +191,4 @@ class CraigslistCrawler(SearchCrawler):
             self.url = "?query=".join([self.baseurl, keywords])
         else:
             self.url = self.baseurl
-        super(BackpageCrawler, self).__init__(kwds, col, eng, max_threads, delay)
+        super(BackpageCrawler, self).__init__(kwds, dbhandler, eng, max_threads, delay)

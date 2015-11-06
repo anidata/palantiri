@@ -8,6 +8,7 @@ from pymongo import MongoClient
 
 from palantiri.core import engine
 from palantiri.core import crawler
+from palantiri.core import datahandler
 
 options = {
         # MongoDB Options
@@ -16,13 +17,14 @@ options = {
         "db": "crawler",
         "collection": "search",
         # Crawler Options
-        "engine": engine.DefaultEngine,
+        "engine": engine.TorEngine(),
         "nthreads": 10,
         "ndelay": 1,
         "terms": None,
         "crawler": None,
         "sites": [],
-        "area": "atlanta"
+        "areas": "atlanta",
+        "join": None
         }
 
 option_descriptions = {
@@ -30,10 +32,10 @@ option_descriptions = {
         "host": "\tHost MongoDB will use",
         "db"  : "\tMongoDB database used",
         "collection": "Database collection used",
-        "engine": "URL fetching \"engine\" used",
-        "nthreads": "Maximum number of green threads spawned",
+        "nthreads": "Maximum number of green threads spawned per crawler",
         "terms": "\tComma separated list of search terms",
-        "area": "\tLocation to be searched"
+        "areas": "\tLocation to be searched",
+        "selenium": "Use Selenium as the \"engine\" to fetch URLs"
         }
 
 def get_help():
@@ -64,16 +66,25 @@ def parse_needed(argv, options):
 
 def parse_optional(argv, options):
     i = 0
-    while i < (len(argv) - 1):
+    while i < len(argv):
         opt = argv[i].replace("--", "")
         if opt in options:
             options[opt] = argv[i + 1]
+            i += 2
         else:
-            print("Could not parse user input: " + argv[i])
-        i += 2
-    if i < len(argv):
-        print("Could not parse user input: " + argv[i])
-        sys.exit(1)
+            if opt == "selenium":
+                options["engine"] = engine.TimedWait(int(argv[i + 1]),
+                        engine.SeleniumEngine())
+                i += 2
+            elif opt == "tor":
+                options["engine"] = engine.BasicTor()
+                i += 1
+            elif opt == "default":
+                options["engine"] = engine.DefaultEngine()
+                i += 1
+            else:
+                print("Could not parse user input: " + argv[i])
+                sys.exit(1)
 
 if __name__ == "__main__":
     argv = sys.argv
@@ -87,27 +98,23 @@ if __name__ == "__main__":
         sys.exit(1)
     else:
         parse_needed(argv, options)
-        if len(argv) > 3:
+        if len(argv) > 2:
             parse_optional(argv[3:], options)
-            url = "".join([
-                "mongodb://",
-                options["host"],
-                ":",
-                options["port"],
-                "/"
-                ])
-            print("Connecting to: %s" % url)
-            conn = MongoClient(url)
-            col = conn[options["db"]][options["collection"]]
 
-            for site in options["sites"]:
-                master = options["crawler"](
-                        sites,
-                        options["terms"].split(",") if options["terms"] else [],
-                        col,
-                        options["area"],
-                        options["engine"](),
-                        int(options["nthreads"]),
-                        int(options["ndelay"])
-                        )
-                master.start()
+            data_handler = datahandler.MongoDBDump(options["host"], options["port"],
+                    options["db"], options["collection"])
+
+
+            areas = options["areas"].split(",")
+            for area in areas:
+                for site in options["sites"]:
+                    master = options["crawler"](
+                            site,
+                            options["terms"].split(",") if options["terms"] else [],
+                            data_handler,
+                            area,
+                            options["engine"],
+                            int(options["nthreads"]),
+                            int(options["ndelay"])
+                            )
+                    master.start()

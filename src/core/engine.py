@@ -3,8 +3,15 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import urllib.request
+import urllib.error
 import time
 import selenium.webdriver
+from stem import Signal
+import stem.connection
+import getpass
+
+import stem.process
+from stem.util import term
 
 from . import errors
 from . import common
@@ -22,27 +29,70 @@ class Engine(object):
     def clone(self):
         raise errors.EngineError("clone not implemented")
 
+DEFAULT_USER_AGENT = "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.0.7) Gecko/2009021910 Firefox/3.0.7"
+
 class DefaultEngine(Engine):
-    def __init__(self, data = None, headers = {}, origin_req_host = None,
-            unverifyable = False, method = None):
+    def __init__(self, data = None, headers = {'User-Agent': DEFAULT_USER_AGENT}):
         self.data = data
         self.headers = headers
-        self.origin_req_host = None
-        self.unverifyable = False
-        self.method = None
         return
 
     def get_page_source(self, url):
-        if url:
-            req = urllib.request.Request( url, self.data, self.headers,
-                    self.origin_req_host, self.unverifyable, self.method)
-            return common.Website(url, str(urllib.request.urlopen(req).read()))
-        else:
+        try:
+            if url:
+                print(url)
+                req = urllib.request.Request(url, self.data, self.headers)
+                return common.Website(url, str(urllib.request.urlopen(req).read()))
+            else:
+                return None
+        except urllib.error.HTTPError as e:
+            print("HTTP Exception at %s with code %i\n%s" % (url, e.code, e.read()))
             return None
 
     def clone(self):
-        return DefaultEngine(self.data, self.headers, self.origin_req_host,
-                self.unverifyable, self.method)
+        return DefaultEngine(self.data, self.headers)
+
+class TorEngine(DefaultEngine):
+    def __init__(self, pw = getpass.getpass("Tor password: "), control = ("127.0.0.1", 9051),
+            signal = Signal.NEWNYM,
+            proxy_handler = urllib.request.ProxyHandler({"http": "127.0.0.1:8118"}),
+            data = None, headers = { "User-Agent": DEFAULT_USER_AGENT }):
+        self.pw = pw
+        self.control = control
+        self.signal = signal
+        self.proxy_handler = proxy_handler
+        proxy_opener = urllib.request.build_opener(self.proxy_handler)
+        urllib.request.install_opener(proxy_opener)
+        super(TorEngine, self).__init__(data, headers)
+
+    def send_signal(self):
+        conn = stem.connection.connect(
+                control_port = self.control,
+                password = self.pw
+                )
+        conn.signal(self.signal)
+        conn.close()
+
+    def get_page_source(self, url):
+        try:
+            if url:
+                self.send_signal()
+                req = urllib.request.Request(url, self.data, self.headers)
+                res = urllib.request.urlopen(req)
+                if res:
+                    return common.Website(url, str(res.read()))
+                else:
+                    return None
+            else:
+                return None
+        except urllib.error.HTTPError as e:
+            print("HTTP Exception at %s with code %i\n%s" % (url, e.code, e.read()))
+            time.sleep(2)
+            return None
+
+    def clone(self):
+        return TorEngine(self.pw, self.control, self.signal, self.proxy_handler,
+                self.data, self.headers)
 
 class BaseSeleniumEngine(Engine):
     def __init__(self):
@@ -125,4 +175,3 @@ class TimedWait(BaseSeleniumEngine):
 
     def get_url(self):
         return self.parent.get_url()
-
