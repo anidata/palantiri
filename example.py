@@ -15,13 +15,13 @@ arr_areas = [
         ]
 
 arr_sites = [
-        #"FemaleEscorts",
+        "FemaleEscorts",
         "BodyRubs",
-        #"Strippers",
-        #"Domination",
-        #"TranssexualEscorts",
-        #"MaleEscorts",
-        #"Datelines",
+        "Strippers",
+        "Domination",
+        "TranssexualEscorts",
+        "MaleEscorts",
+        "Datelines",
         "AdultJobs",
         ]
 
