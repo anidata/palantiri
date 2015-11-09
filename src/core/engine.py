@@ -86,7 +86,7 @@ class TorEngine(DefaultEngine):
             else:
                 return None
         except urllib.error.HTTPError as e:
-            print("HTTP Exception at %s with code %i\n%s" % (url, e.code, e.read()))
+            print("HTTP Exception at %s with code %i\n%s" % (url, e.code))
             time.sleep(2)
             return None
 
