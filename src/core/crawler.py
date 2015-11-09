@@ -89,9 +89,12 @@ class EngineWrapper(threading.Thread):
                 time.sleep(self.delay)
         return
 
-class SearchCrawler(object):
+class SearchCrawler(threading.Thread):
     def __init__(self, kwds = [], dbhandler = None, eng = engine.DefaultEngine(),
-            max_threads = 10, delay = 1):
+            max_threads = 10, delay = 1, group = None, name = None,
+            args = (), kwargs = None):
+        super(SearchCrawler, self).__init__(group = group, name = name,
+                args = args, kwargs = kwargs)
         self.max_threads = max_threads
         self.eng = eng
         self.dbhandler = dbhandler
@@ -164,7 +167,7 @@ class BackpageCrawler(SearchCrawler):
         self.to_visit.extend(valid)
         return
 
-    def start(self):
+    def run(self):
         self.start_threads()
         time.sleep(self.delay)
         url = self.url
@@ -181,14 +184,3 @@ class BackpageCrawler(SearchCrawler):
         self.stop.set()
         for t in self.children:
             t.join()
-
-class CraigslistCrawler(SearchCrawler):
-    def __init__(self, site, kwds = [], dbhandler = None, area = "atlanta",
-            eng = engine.DefaultEngine(), max_threads = 10, delay = 1):
-        self.baseurl = "".join(["http://", area, ".craigslist.com/search/", site, "/"])
-        if kwds:
-            keywords = "+".join(kwds)
-            self.url = "?query=".join([self.baseurl, keywords])
-        else:
-            self.url = self.baseurl
-        super(BackpageCrawler, self).__init__(kwds, dbhandler, eng, max_threads, delay)

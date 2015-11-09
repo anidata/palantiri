@@ -106,6 +106,7 @@ if __name__ == "__main__":
 
 
             areas = options["areas"].split(",")
+            threads = []
             for area in areas:
                 for site in options["sites"]:
                     master = options["crawler"](
@@ -117,4 +118,7 @@ if __name__ == "__main__":
                             int(options["nthreads"]),
                             int(options["ndelay"])
                             )
+                    threads.append(master)
                     master.start()
+            for t in threads:
+                t.join()
