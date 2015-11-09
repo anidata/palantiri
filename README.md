@@ -28,12 +28,35 @@ This is the core web crawler that will be used for the human trafficking project
   - `site` takes a comma separated list which defines the subdirectories to search. E.g. BusinessServices,ComputerServices
   - optional arguments are defined with `--<argument> value`
 
-A more detailed list may be obtained by running `python search.py --help`
+A more detailed list may be obtained by running `python search.py --help`. [example.py](example.py) is an example of what
+we currently run.
+
+## Running with tor and privoxy
+
+- Generate a hashed password for [tor](https://www.torproject.org/)
+
+  ```
+    tor --hash-password mypassword
+  ```
+
+- Add the password hash and what should be the default, `ControlPort 9051`, to your `/etc/tor/torrc`
+
+- [Privoxy](http://www.privoxy.org/) to route all traffic through tor, by adding the following to your `/etc/privoxy/config`
+
+```
+  forward-socks5 / localhost:9050 .
+```
+
+- Restart both tor and privoxy, and the script should do the rest for you. If you are interested in how that is accomplished,
+  check out [engine.py](src/core/engine.py) and the class `TorEngine`.
 
 ## Dependencies
 
-- Python 3.4
-- selenium 2.47.1
+- [Python 3.4](https://www.python.org/)
+- [Selenium 2.47.1](https://github.com/seleniumhq/selenium)
+- [Tor 2.7.4](https://www.torproject.org/)
+- [Stem 1.4.1](https://stem.torproject.org/)
+- [Privoxy 3.0.23](http://www.privoxy.org/)
 
 ## Contributing
 
