@@ -29,7 +29,7 @@ This is the core web crawler that will be used for the human trafficking project
   - optional arguments are defined with `--<argument> value`
 
 A more detailed list may be obtained by running `python search.py --help`. [example.py](example.py) is an example of what
-we currently run.
+we currently run. The run time for the program is around 30 minutes.
 
 ## Running with tor and privoxy
 
