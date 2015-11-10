@@ -32,5 +32,5 @@ arr_sites = [
 areas = ",".join(arr_areas)
 sites = ",".join(arr_sites)
 
-subprocess.call(["python", "search.py", "-b", sites, "--areas", areas,
-    "--nthreads", "4", "--db", "webcrawler", "--collection", "backpage"])
+subprocess.call(["python", "search.py", "-b", sites, "--tor", "--areas", areas,
+    "--nthreads", "2", "--db", "crawler", "--collection", "search"])
