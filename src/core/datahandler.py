@@ -46,7 +46,7 @@ class BackPageUrlParser(object):
         return
 
     def process(self, message):
-        parsed = re.findall("http://(\w+).backpage.com/(\w+)/", message.url)
+        parsed = re.findall("http://(\w+)\.(\w+)\.com/", message.url)
         today = datetime.datetime.now()
         res = {
                 "_id": message.url,
@@ -61,8 +61,7 @@ class BackPageUrlParser(object):
             res = self.parent.process(message)
         location = {}
         location["area"] = "" if len(parsed) < 1 else parsed[0][0]
-        location["subdirectory"] = "" if len(parsed) < 1 else parsed[0][1]
-        location["site"] = "backpage"
+        location["site"] = "" if len(parsed) < 1 else parsed[0][1]
         res["siteInfo"] = location
         return res
 

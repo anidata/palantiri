@@ -17,7 +17,7 @@ options = {
         "db": "crawler",
         "collection": "search",
         # Crawler Options
-        "engine": engine.TorEngine(),
+        "engine": engine.DefaultEngine(),
         "nthreads": 10,
         "ndelay": 1,
         "terms": None,
@@ -77,7 +77,7 @@ def parse_optional(argv, options):
                         engine.SeleniumEngine())
                 i += 2
             elif opt == "tor":
-                options["engine"] = engine.BasicTor()
+                options["engine"] = engine.TorEngine()
                 i += 1
             elif opt == "default":
                 options["engine"] = engine.DefaultEngine()

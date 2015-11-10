@@ -51,11 +51,13 @@ class DefaultEngine(Engine):
         return DefaultEngine(self.data, self.headers)
 
 class TorEngine(DefaultEngine):
-    def __init__(self, pw = getpass.getpass("Tor password: "), control = ("127.0.0.1", 9051),
-            signal = Signal.NEWNYM,
+    def __init__(self, pw = None, control = ("127.0.0.1", 9051), signal = Signal.NEWNYM,
             proxy_handler = urllib.request.ProxyHandler({"http": "127.0.0.1:8118"}),
             data = None, headers = { "User-Agent": DEFAULT_USER_AGENT }):
-        self.pw = pw
+        if pw:
+            self.pw = pw
+        else:
+            self.pw = getpass.getpass("Tor password: ")
         self.control = control
         self.signal = signal
         self.proxy_handler = proxy_handler
