@@ -40,13 +40,11 @@ class DefaultEngine(Engine):
     def get_page_source(self, url):
         try:
             if url:
-                print(url)
                 req = urllib.request.Request(url, self.data, self.headers)
                 return common.Website(url, str(urllib.request.urlopen(req).read()))
             else:
                 return None
         except urllib.error.HTTPError as e:
-            print("HTTP Exception at %s with code %i\n%s" % (url, e.code, e.read()))
             return None
 
     def clone(self):
@@ -86,7 +84,6 @@ class TorEngine(DefaultEngine):
             else:
                 return None
         except urllib.error.HTTPError as e:
-            print("HTTP Exception at %s with code %i\n%s" % (url, e.code))
             time.sleep(2)
             return None
 
