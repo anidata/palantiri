@@ -22,7 +22,7 @@ class ContactFilter(object):
         res = {
                 "_id": message.url,
                 "v": __document_version__,
-                "souce": message.source,
+                "source": message.source,
                 "contact": {
                     "emails": emails,
                     "phones": phones
@@ -51,7 +51,7 @@ class BackPageUrlParser(object):
         res = {
                 "_id": message.url,
                 "v": __document_version__,
-                "souce": message.source,
+                "source": message.source,
                 "dateRange": {
                     "first": today,
                     "last": today,
@@ -61,8 +61,9 @@ class BackPageUrlParser(object):
             res = self.parent.process(message)
         location = {}
         location["area"] = "" if len(parsed) < 1 else parsed[0][0]
-        location["subsection"] = "" if len(parsed) < 1 else parsed[0][1]
-        res["location"] = location
+        location["subdirectory"] = "" if len(parsed) < 1 else parsed[0][1]
+        location["site"] = "backpage"
+        res["siteInfo"] = location
         return res
 
 class MongoDBDump(object):
