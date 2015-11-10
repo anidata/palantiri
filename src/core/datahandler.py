@@ -79,6 +79,9 @@ class MongoDBDump(object):
         self.col = self.conn[dbname][colname]
         self.processor = processor
 
+    def find_by_id(self, _id):
+        return self.col.find({"_id": {"$eq": _id}})
+
     def dump(self, message):
         try:
             curr = self.col.find({"_id": {"$eq": message.url}}).limit(1)

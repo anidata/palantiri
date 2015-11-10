@@ -99,7 +99,6 @@ class SearchCrawler(threading.Thread):
         self.eng = eng
         self.dbhandler = dbhandler
         self.stop = threading.Event()
-        self.history = SharedList([])
         self.to_visit = SharedList([])
         self.delay = delay
         self.kwds = kwds
@@ -114,8 +113,7 @@ class SearchCrawler(threading.Thread):
 
     def notify(self, message):
         if isinstance(message, common.Website):
-            self.history.append(message)
-            threading.Thread(target=self.dbhandler.dump(message))
+            self.dbhandler.dump(message)
             return True
         else:
             return False
@@ -161,7 +159,8 @@ class BackpageCrawler(SearchCrawler):
             if not re.search(self.baseurl, href):
                 continue
 
-            if not href in self.to_visit and not href in self.history:
+            cur = self.dbhandler.find_by_id(href).limit(1)
+            if not href in self.to_visit and not cur.count():
                 valid.append(href)
 
         self.to_visit.extend(valid)
