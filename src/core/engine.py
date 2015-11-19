@@ -12,6 +12,7 @@ import getpass
 
 import stem.process
 from stem.util import term
+import http.client
 
 from . import errors
 from . import common
@@ -80,7 +81,10 @@ class TorEngine(DefaultEngine):
                 req = urllib.request.Request(url, self.data, self.headers)
                 res = urllib.request.urlopen(req)
                 if res:
-                    return common.Website(url, str(res.read()))
+                    try:
+                        return common.Website(url, str(res.read()))
+                    except http.client.IncompleteRead:
+                        return None
                 else:
                     return None
             else:
