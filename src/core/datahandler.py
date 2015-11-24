@@ -24,8 +24,8 @@ class ContactFilter(object):
                 "v": __document_version__,
                 "source": message.source,
                 "contact": {
-                    "emails": emails,
-                    "phones": phones
+                    "emails": list(set(emails)),
+                    "phones": list(set(phones))
                     },
                 "dateRange": {
                     "first": today,
