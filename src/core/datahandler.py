@@ -16,16 +16,20 @@ class ContactFilter(object):
         return
 
     def process(self, message):
-        phones = re.findall("\d{3}[-/]\d{3}[-/]\d{4}|\d{10}", message.source)
+        # contact info may be in the email or the url
+        phones = re.findall("(\d{3})\D*(\d{3})\D*(\d{4})", message.source)
+        phones.extend(re.findall("(\d{3})\D*(\d{3})\D*(\d{4})", message.url))
         emails = re.findall("[\w._-]+\@[\w_-]+\.\w+", message.source)
+        emails.extend(re.findall("[\w._-]+\@[\w_-]+\.\w+", message.url))
         today = datetime.datetime.now()
         res = {
                 "_id": message.url,
                 "v": __document_version__,
                 "source": message.source,
                 "contact": {
+                    # store only unique emails and phones
                     "emails": list(set(emails)),
-                    "phones": list(set(phones))
+                    "phones": list(set(["-".join(x) for x in phones]))
                     },
                 "dateRange": {
                     "first": today,
