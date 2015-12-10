@@ -5,17 +5,17 @@
 import subprocess
 
 arr_areas = [
-        #"albanyga",
-        #"athensga",
+        "albanyga",
+        "athensga",
         "atlanta",
-        #"augusta",
-        #"brunswick",
-        #"columbusga",
-        #"macon",
-        #"nwga",
-        #"savannah",
-        #"statesboro",
-        #"valdosta"
+        "augusta",
+        "brunswick",
+        "columbusga",
+        "macon",
+        "nwga",
+        "savannah",
+        "statesboro",
+        "valdosta"
         ]
 
 arr_sites = [
