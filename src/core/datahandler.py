@@ -7,6 +7,7 @@ import re
 
 from pymongo import MongoClient
 import pymongo.errors
+from pymongo import ReadPreference
 
 __document_version__ = "0.1"
 
@@ -71,7 +72,7 @@ class BackPageUrlParser(object):
 
 class MongoDBDump(object):
     def __init__(self, host, port, dbname, colname,
-            processor = ContactFilter(BackPageUrlParser())):
+            processor = ContactFilter(BackPageUrlParser()), replset = None):
         url = "".join([
             "mongodb://",
             host,
@@ -79,7 +80,12 @@ class MongoDBDump(object):
             port,
             "/"
             ])
-        self.conn = MongoClient(url)
+        if replset:
+            self.conn = MongoClient(url, replicaSet = replset,
+                    read_preference = ReadPreference.PRIMARY_PREFERRED)
+        else:
+            self.conn = MongoClient(url)
+
         self.col = self.conn[dbname][colname]
         self.processor = processor
 

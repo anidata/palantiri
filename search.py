@@ -4,6 +4,7 @@
 
 import sys
 import re
+import pymongo
 from pymongo import MongoClient
 
 from palantiri.core import engine
@@ -16,6 +17,7 @@ options = {
         "host": "127.0.0.1",
         "db": "crawler",
         "collection": "search",
+        "repl": None,
         # Crawler Options
         "engine": engine.DefaultEngine(),
         "nthreads": 10,
@@ -32,6 +34,7 @@ option_descriptions = {
         "host": "\tHost MongoDB will use",
         "db"  : "\tMongoDB database used",
         "collection": "Database collection used",
+        "repl" : "\tMongoDB replica set used",
         "nthreads": "Maximum number of green threads spawned per crawler",
         "terms": "\tComma separated list of search terms",
         "areas": "\tLocation to be searched",
@@ -102,7 +105,7 @@ if __name__ == "__main__":
             parse_optional(argv[3:], options)
 
             data_handler = datahandler.MongoDBDump(options["host"], options["port"],
-                    options["db"], options["collection"])
+                    options["db"], options["collection"], replset = options["repl"])
 
 
             areas = options["areas"].split(",")
