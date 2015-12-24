@@ -2,11 +2,13 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-import time
-import threading
-import urllib.parse
-import re
 import datetime
+import logging
+import random
+import re
+import threading
+import time
+import urllib.parse
 from bs4 import BeautifulSoup
 
 from . import errors
@@ -85,6 +87,7 @@ class EngineWrapper(threading.Thread):
                     threading.Thread(target=self.parent.notify(site))
             # The parent needs more time to generate more sites.
             # Wait the set delay
+                time.sleep(self.delay)
             else:
                 time.sleep(self.delay)
         return
@@ -113,6 +116,7 @@ class SearchCrawler(threading.Thread):
 
     def notify(self, message):
         if isinstance(message, common.Website):
+            logging.info("Dumping %s" % str(message.url))
             self.dbhandler.dump(message)
             return True
         else:
@@ -123,6 +127,7 @@ class SearchCrawler(threading.Thread):
             t = EngineWrapper(self)
             self.children.append(t)
             t.start()
+        logging.info("Started %d threads" % self.max_threads)
 
     def run(self):
         raise MasterError("get_listings has not been implemented for this class")
@@ -183,3 +188,91 @@ class BackpageCrawler(SearchCrawler):
         self.stop.set()
         for t in self.children:
             t.join()
+
+class BackpageContinuousCrawler(BackpageCrawler):
+
+    """Continously running version of BackpageCrawler class"""
+
+    def __init__(self, site, kwds = None, dbhandler = None, area =
+                 "atlanta", eng = engine.DefaultEngine(), max_threads = 2,
+                 delay = 5):
+        """TODO: to be defined1.
+
+        :site: TODO
+        :kwds: TODO
+        :dbhandler: TODO
+        :area: TODO
+        :eng: TODO
+
+        """
+        BackpageCrawler.__init__(self, site, kwds, dbhandler, area, eng, max_threads,
+                                 delay)
+        self._avg_delay = delay
+
+    @property
+    def delay(self):
+        return 0.5 * self._avg_delay + random.random() * self._avg_delay
+
+    @delay.setter
+    def delay(self, value):
+        self._avg_delay = value
+
+    def get_listings(self, soup):
+        links = soup.find_all("a", href=True)
+        valid = []
+        for link in links:
+            # remove some non-ad links
+            if link.has_attr("class"):
+                continue
+
+            href = str(urllib.parse.urljoin(self.baseurl, link["href"]))
+            # remove urls that are not on the same site
+            if not re.search(self.baseurl, href):
+                continue
+
+            cur = self.dbhandler.find_by_id(href).limit(1)
+            if not href in self.to_visit and not cur.count():
+                valid.append(href)
+
+        self.to_visit.extend(valid)
+        return valid
+
+    def run(self):
+        self.start_threads()
+        time.sleep(self.delay)
+        url = self.url
+        new_listing_cnt = 0
+
+        # TODO: These should be configurable, not hard coded
+        self.max_retry = 3
+        retry = 0
+
+        old_listing_cnt = -1
+        while url and new_listing_cnt != old_listing_cnt:
+            site = self.eng.get_page_source(url)
+            if site:
+                soup = BeautifulSoup(site.source, "lxml")
+                valid_listings = self.get_listings(soup)
+                new_listing_cnt += len(valid_listings)
+
+                url = self.next_page(soup)
+            else:
+                if old_listing_cnt == new_listing_cnt:
+                    retry += 1
+                else:
+                    retry = 0
+
+                old_listing_cnt = new_listing_cnt
+                if retry <= self.max_retry:
+                    url = self.url
+                    retry_delay = 10 * self.delay
+                    logging.info("Waiting %d seconds to retry" % retry_delay)
+                    time.sleep(retry_delay)
+                else:
+                    logging.info("Tried %d times without new results" % retry)
+                    url = None
+
+        self.stop.set()
+        for t in self.children:
+            t.join()
+

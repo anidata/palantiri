@@ -20,6 +20,7 @@ class PackageTest(Command):
             "-s", "./tests", "-p", "test_*.py"])
         raise SystemExit(errno)
 
+# TODO: Added package requirements
 setup(
         name="palantiri",
         version="0.0.1",
