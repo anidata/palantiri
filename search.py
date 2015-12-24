@@ -2,6 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+import logging
 import sys
 import re
 import pymongo
@@ -10,6 +11,8 @@ from pymongo import MongoClient
 from palantiri.core import engine
 from palantiri.core import crawler
 from palantiri.core import datahandler
+
+logging.basicConfig(level=logging.INFO)
 
 options = {
         # MongoDB Options
@@ -60,6 +63,9 @@ def parse_needed(argv, options):
         elif re.search("b", argv[1]):
             print("Backpage Search")
             options["crawler"] = crawler.BackpageCrawler
+        elif re.search("z", argv[1]):
+            print("Backpage Continious Search")
+            options["crawler"] = crawler.BackpageContinuousCrawler
         else:
             print("Could not parse user input")
             sys.exit(1)
