@@ -3,7 +3,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import subprocess
-from distutils.core import setup, Command
+from distutils.core import setup, Command, Extension
 
 class PackageTest(Command):
     user_options = []
@@ -20,6 +20,8 @@ class PackageTest(Command):
             "-s", "./tests", "-p", "test_*.py"])
         raise SystemExit(errno)
 
+util_module = Extension(name = "util", sources = ["src/ext/util.c"])
+
 setup(
         name="palantiri",
         version="0.0.1",
@@ -27,6 +29,8 @@ setup(
         author="Daniel Robertson",
         author_email="danlrobertson89@gmail.com",
         license="MPL 2.0",
+        ext_package = "palantiri",
+        ext_modules = [util_module],
         packages=["palantiri", "palantiri.core"],
         package_dir={'palantiri': 'src'},
         cmdclass = {'test': PackageTest}
