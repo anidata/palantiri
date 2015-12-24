@@ -2,9 +2,13 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-import subprocess
+from pymongo import MongoClient
 
-arr_areas = [
+from src.core import engine
+from src.core import crawler
+from src.core import datahandler
+
+areas = [
         "albanyga",
         "athensga",
         "atlanta",
@@ -18,7 +22,7 @@ arr_areas = [
         "valdosta"
         ]
 
-arr_sites = [
+sites = [
         "FemaleEscorts",
         "BodyRubs",
         "Strippers",
@@ -29,8 +33,17 @@ arr_sites = [
         "AdultJobs",
         ]
 
-areas = ",".join(arr_areas)
-sites = ",".join(arr_sites)
+data_handler = datahandler.MongoDBDump("127.0.0.1", "27017", "crawler",
+        "search", replset = "rs0")
 
-subprocess.call(["python", "search.py", "-z", sites, "--default", "--areas", areas,
-    "--nthreads", "4", "--ndelay", "20", "--db", "crawler", "--collection", "search"])
+eng = engine.TorEngine()
+for area in areas:
+    threads = []
+    for site in sites:
+        master = crawler.BackpageCrawler(site, [], data_handler, area,
+                                         eng, 1, 1)
+
+        threads.append(master)
+        master.start()
+    for t in threads:
+        t.join()

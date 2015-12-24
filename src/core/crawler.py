@@ -10,6 +10,7 @@ import threading
 import time
 import urllib.parse
 from bs4 import BeautifulSoup
+import pymongo.errors
 
 from . import errors
 from . import common
@@ -84,7 +85,11 @@ class EngineWrapper(threading.Thread):
                 url = self.to_visit.pop()
                 site = self.eng.get_page_source(url)
                 if url and site:
-                    threading.Thread(target=self.parent.notify(site))
+                    try:
+                        self.parent.notify(site)
+                    # give the dbs a sec to catch up
+                    except (pymongo.errors.AutoReconnect, pymongo.errors.NotMasterError):
+                        time.sleep(self.delay)
             # The parent needs more time to generate more sites.
             # Wait the set delay
                 time.sleep(self.delay)
@@ -116,8 +121,7 @@ class SearchCrawler(threading.Thread):
 
     def notify(self, message):
         if isinstance(message, common.Website):
-            logging.info("Dumping %s" % str(message.url))
-            self.dbhandler.dump(message)
+            threading.Thread(target=self.dbhandler.dump(message))
             return True
         else:
             return False
@@ -164,9 +168,13 @@ class BackpageCrawler(SearchCrawler):
             if not re.search(self.baseurl, href):
                 continue
 
-            cur = self.dbhandler.find_by_id(href).limit(1)
-            if not href in self.to_visit and not cur.count():
-                valid.append(href)
+            try:
+                cur = self.dbhandler.find_by_id(href).limit(1)
+                if not href in self.to_visit and not cur.count():
+                    valid.append(href)
+            except (pymongo.errors.AutoReconnect, pymongo.errors.NotMasterError):
+                # try again
+                self.get_listings(soup)
 
         self.to_visit.extend(valid)
         return
