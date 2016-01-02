@@ -54,10 +54,6 @@ idea that you have already hacked up a reasonable solution for, feel free to for
   <td>a bug that is impacting the performance (typically speed) of the program</td>
 </td>
 <tr>
-  <td>~procrastination-at-its-best</td>
-  <td>something that should be implemented ASAP, but someone is too lazy :smile: </td>
-</tr>
-<tr>
   <td>~research</td>
   <td>an issue that may not include code at all, but might require breaking open a book digging through documentation
 </tr>
