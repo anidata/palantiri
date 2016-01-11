@@ -2,7 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-import threading
+import getpass
 from pymongo import MongoClient
 
 from src.core import engine
@@ -20,7 +20,14 @@ areas = [
         "nwga",
         "savannah",
         "statesboro",
-        "valdosta"
+        "valdosta",
+        "birmingham",
+        "nashville",
+        "panamacity",
+        "myrtlebeach",
+        "memphis",
+        "miami",
+        "tampa"
         ]
 
 sites = [
@@ -34,15 +41,16 @@ sites = [
         "AdultJobs",
         ]
 
-data_handler = datahandler.MongoDBDump("127.0.0.1", "27017", "crawler",
-        "search", replset = "rs0")
-
+user = input("Username: ")
+pwd = getpass.getpass("MongoDB Password: ")
+data_handler = datahandler.MongoDBDump("danrobertson.org", "27017", "crawler", "search",
+        user = user, pwd = pwd) 
 eng = engine.TorEngine()
 for area in areas:
     threads = []
     for site in sites:
         master = crawler.BackpageCrawler(site, [], data_handler, area,
-                                         eng, 1, 1)
+                                         eng, 6, 1)
 
         threads.append(master)
         master.start()

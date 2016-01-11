@@ -72,7 +72,8 @@ class BackPageUrlParser(object):
 
 class MongoDBDump(object):
     def __init__(self, host, port, dbname, colname,
-            processor = ContactFilter(BackPageUrlParser()), replset = None):
+            processor = ContactFilter(BackPageUrlParser()),
+            replset = None, user = None, pwd = None):
         url = "".join([
             "mongodb://",
             host,
@@ -85,6 +86,9 @@ class MongoDBDump(object):
                     read_preference = ReadPreference.PRIMARY_PREFERRED)
         else:
             self.conn = MongoClient(url)
+        if user and pwd:
+            res = self.conn["crawler"].authenticate(user, pwd)
+            #TODO: add err handling for else
 
         self.col = self.conn[dbname][colname]
         self.processor = processor
