@@ -16,10 +16,12 @@ class ContactFilter(object):
         self.parent = parent
         return
 
+    # re.findall("([^2-90]|\b|^)(\d{3})\W*(\d{3})\W*(\d{4})([^\d]|$)", "157145192411")
     def process(self, message):
         # contact info may be in the email or the url
-        phones = re.findall("(\d{3})\D*(\d{3})\D*(\d{4})", message.source)
-        phones.extend(re.findall("(\d{3})\D*(\d{3})\D*(\d{4})", message.url))
+        phonestr = "1?(\d\s*\d\s*\d)\W*(\d\s*\d\s*\d)\W*(\d\s*\d\s*\d\s*\d)"
+        phones = re.findall(phonestr, message.source)
+        phones.extend(re.findall(phonestr, message.url))
         emails = re.findall("[\w._-]+\@[\w_-]+\.\w+", message.source)
         emails.extend(re.findall("[\w._-]+\@[\w_-]+\.\w+", message.url))
         today = datetime.datetime.now()
