@@ -3,13 +3,12 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import datetime
+import getpass
 import re
 
 from pymongo import MongoClient
 import pymongo.errors
 from pymongo import ReadPreference
-
-__document_version__ = "0.1"
 
 class ContactFilter(object):
     def __init__(self, parent = None):
@@ -71,6 +70,82 @@ class BackPageUrlParser(object):
         location["site"] = "" if len(parsed) < 1 else parsed[0][1]
         res["siteInfo"] = location
         return res
+
+def setstrinterp(x):
+    if isinstance(x, str):
+        return "'%s'" % x
+    if isinstance(x, datetime.datetime):
+        return "TIMESTAMP '{}'".format(x.strftime("%Y-%m-%d %H:%M:%S"))
+    else:
+        return "%r" % x
+
+class PostgreSQLDump(object):
+    # Ugly hack to convert types to PSQL types before insert
+    def setnull(func):
+        def inner(*args):
+            # skip self and add self
+            new_args = [setstrinterp(x) if x else "NULL" for x in args[1:]]
+            return func(args[0], *new_args)
+        return inner
+
+    def __init__(self, host, port, dbname, tablename,
+            processor = None, user = None, pwd = None):
+        self.db = dbname
+        if user:
+            self.user = user
+        else:
+            self.user = raw_input("PostgreSQL User: ")
+        if pwd:
+            self.pwd = pwd
+        else:
+            self.pwd = getpass.getpass("PostgreSQL Password: ")
+
+        self.conn = psycopg2.connect(
+                "dbname='{}' user='{}' host='{}' password='{}'".format(
+                    self.db, self.user, self.host, self.pwd
+                    )
+                )
+        self.processor = processor
+
+    def __repr__(self):
+        return "PostgreSQLDump({}, {})".format(host, db)
+
+    def set_insert_table(self, table):
+        return """INSERT INTO {}(%s) VALUES (%s);""".format(table)
+
+    def run_cmd(self, cmd):
+        cur = self.conn.cursor()
+        cur.execute(cmd)
+        return cur
+
+    @setnull
+    def dump(self, message):
+        try:
+            href = message.url.replace("'", "")
+            if cur.fetchone():
+                source = message.source.replace("\\n", "\n")
+                source = source.replace("\\r", "")
+                source = source.replace("&nbsp", " ")
+                insstr = self.set_insert_table("page") % (
+                        "Url, Content, DateScraped, CrawlerId",
+                        "{}, {}, {}, {}".format(
+                            href,
+                            source.replace("\'", "\""),
+                            datetime.datetime.now(),
+                            vers)
+                        )
+                cur = self.run_cmd(insstr)
+                cur.close()
+                self.conn.commit()
+        except exception psycopg2.IntegrityError:
+            # Another thread beat us to the insert
+            pass
+
+    def find_by_id(self, _id):
+        cur = self.run_cmd(
+                """SELECT (id,content) FROM page WHERE url = {}""".format(href)
+                )
+        return cur.fetchone()
 
 class MongoDBDump(object):
     def __init__(self, host, port, dbname, colname,
