@@ -10,17 +10,26 @@ This is the core web crawler that will be used for the human trafficking project
 
 ```bash
   # clone
-  git clone git@gitlab.com:danlrobertson/palantiri.git     # ssh
+  git clone git@gitlab.com:atl-ads/palantiri.git     # ssh
   # or
-  git clone https://gitlab.com/danlrobertson/palantiri.git # http
+  git clone https://gitlab.com/atl-ads/palantiri.git # http
   # build
-  python setup.py install
+  cd palantiri
+  
+  # install pip; anaconda python package is easiest way to do this https://www.continuum.io/downloads
+  pip install -e .
+
   # test
   python setup.py test
 ```
 
 ## Running
 
+### Start Mongo Server
+??
+
+
+### Scrape
 ```bash
   python search.py -[cgb] <site> <optional arguments>"
 ```

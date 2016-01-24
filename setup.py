@@ -29,5 +29,9 @@ setup(
         license="MPL 2.0",
         packages=["palantiri", "palantiri.core"],
         package_dir={'palantiri': 'src'},
-        cmdclass = {'test': PackageTest}
+        cmdclass = {'test': PackageTest},
+        install_requires=["beautifulsoup4 == 4.4.1",
+                          "pymongo == 3.2",
+                          "selenium == 2.49.2",
+                          "stem == 1.4.0"]
         )
