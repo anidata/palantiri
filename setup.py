@@ -37,5 +37,6 @@ setup(
         install_requires=["beautifulsoup4 == 4.4.1",
                           "pymongo == 3.2",
                           "selenium == 2.49.2",
-                          "stem == 1.4.0"]
+                          "stem == 1.4.0",
+                          "psycopg2 == 2.6.1"]
         )
