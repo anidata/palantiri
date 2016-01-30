@@ -165,9 +165,12 @@ class BackpageCrawler(SearchCrawler):
                 continue
 
             try:
-                cur = self.dbhandler.find_by_id(href).limit(1)
-                if not href in self.to_visit and not cur.count():
+                b_isindb = self.dbhandler.find_by_id(href)
+                if not href in self.to_visit and not b_isindb:
                     valid.append(href)
+                if len(valid) > 100:
+                    self.to_visit.extend(valid)
+                    valid.clear()
             except (pymongo.errors.AutoReconnect, pymongo.errors.NotMasterError):
                 # try again
                 self.get_listings(soup)

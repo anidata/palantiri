@@ -10,6 +10,10 @@ from pymongo import MongoClient
 import pymongo.errors
 from pymongo import ReadPreference
 
+import psycopg2
+
+_version = 1
+
 class ContactFilter(object):
     def __init__(self, parent = None):
         self.parent = parent
@@ -26,7 +30,7 @@ class ContactFilter(object):
         today = datetime.datetime.now()
         res = {
                 "_id": message.url,
-                "v": __document_version__,
+                "v": _version,
                 "source": message.source,
                 "contact": {
                     # store only unique emails and phones
@@ -56,7 +60,7 @@ class BackPageUrlParser(object):
         today = datetime.datetime.now()
         res = {
                 "_id": message.url,
-                "v": __document_version__,
+                "v": _version,
                 "source": message.source,
                 "dateRange": {
                     "first": today,
@@ -71,26 +75,11 @@ class BackPageUrlParser(object):
         res["siteInfo"] = location
         return res
 
-def setstrinterp(x):
-    if isinstance(x, str):
-        return "'%s'" % x
-    if isinstance(x, datetime.datetime):
-        return "TIMESTAMP '{}'".format(x.strftime("%Y-%m-%d %H:%M:%S"))
-    else:
-        return "%r" % x
-
 class PostgreSQLDump(object):
-    # Ugly hack to convert types to PSQL types before insert
-    def setnull(func):
-        def inner(*args):
-            # skip self and add self
-            new_args = [setstrinterp(x) if x else "NULL" for x in args[1:]]
-            return func(args[0], *new_args)
-        return inner
-
-    def __init__(self, host, port, dbname, tablename,
+    def __init__(self, host, dbname,
             processor = None, user = None, pwd = None):
         self.db = dbname
+        self.host = host
         if user:
             self.user = user
         else:
@@ -118,34 +107,47 @@ class PostgreSQLDump(object):
         cur.execute(cmd)
         return cur
 
-    @setnull
     def dump(self, message):
         try:
-            href = message.url.replace("'", "")
-            if cur.fetchone():
+            href = message.url
+            href = href.replace("'", "")
+            cur = self.find_by_id(href)
+            if not cur:
                 source = message.source.replace("\\n", "\n")
                 source = source.replace("\\r", "")
                 source = source.replace("&nbsp", " ")
                 insstr = self.set_insert_table("page") % (
                         "Url, Content, DateScraped, CrawlerId",
-                        "{}, {}, {}, {}".format(
+                        "'{}', '{}', NOW(), {}".format(
                             href,
                             source.replace("\'", "\""),
-                            datetime.datetime.now(),
-                            vers)
+                            _version)
                         )
-                cur = self.run_cmd(insstr)
+                cur = self.conn.cursor()
+                cur.execute(insstr)
                 cur.close()
                 self.conn.commit()
-        except exception psycopg2.IntegrityError:
+        except psycopg2.IntegrityError:
             # Another thread beat us to the insert
             pass
+        except psycopg2.InternalError:
+            self.conn = psycopg2.connect(
+                    "dbname='{}' user='{}' host='{}' password='{}'".format(
+                        self.db, self.user, self.host, self.pwd
+                        )
+                    )
 
-    def find_by_id(self, _id):
-        cur = self.run_cmd(
-                """SELECT (id,content) FROM page WHERE url = {}""".format(href)
+    def find_by_id(self, _id, attempt = 0):
+        try:
+            cur = self.conn.cursor()
+            cur.execute(
+            """SELECT id FROM page WHERE url = '{}'""".format(_id)
                 )
-        return cur.fetchone()
+            return cur.fetchone() is not None
+        except (psycopg2.IntegrityError, psycopg2.InternalError):
+            if attempt < 5:
+                return self.find_by_id(_id, attempt + 1)
+            return None
 
 class MongoDBDump(object):
     def __init__(self, host, port, dbname, colname,
@@ -171,7 +173,7 @@ class MongoDBDump(object):
         self.processor = processor
 
     def find_by_id(self, _id):
-        return self.col.find({"_id": {"$eq": _id}})
+        return self.col.find({"_id": {"$eq": _id}}).limit(1)
 
     def dump(self, message):
         try:

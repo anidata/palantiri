@@ -42,10 +42,10 @@ sites = [
         "AdultJobs",
         ]
 
-user = input("Username: ")
-pwd = getpass.getpass("MongoDB Password: ")
-data_handler = datahandler.MongoDBDump("danrobertson.org", "27017", "crawler", "search",
-        user = user, pwd = pwd) 
+user = input("PostgreSQL Username: ")
+pwd = getpass.getpass("PostgreSQL Password: ")
+data_handler = datahandler.PostgreSQLDump("danrobertson.org", "crawler2",
+        user = user, pwd = pwd)
 eng = engine.TorEngine()
 
 def first_finished(threads):
@@ -55,6 +55,7 @@ def first_finished(threads):
     return None
 
 for area in areas:
+    print(area)
     threads = []
     for site in sites:
         if len(threads) > 4:
