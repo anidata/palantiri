@@ -4,6 +4,7 @@
 
 import getpass
 from pymongo import MongoClient
+import time
 
 from src.core import engine
 from src.core import crawler
@@ -41,18 +42,35 @@ sites = [
         "AdultJobs",
         ]
 
-user = input("Username: ")
-pwd = getpass.getpass("MongoDB Password: ")
-data_handler = datahandler.MongoDBDump("danrobertson.org", "27017", "crawler", "search",
-        user = user, pwd = pwd) 
+user = input("PostgreSQL Username: ")
+pwd = getpass.getpass("PostgreSQL Password: ")
+data_handler = datahandler.PostgreSQLDump("danrobertson.org", "crawler2",
+        user = user, pwd = pwd)
 eng = engine.TorEngine()
+
+def first_finished(threads):
+    for i in range(0, len(threads)):
+        if not threads[i].isAlive():
+            return i
+    return None
+
 for area in areas:
+    print(area)
     threads = []
     for site in sites:
+        if len(threads) > 4:
+            idx = first_finished(threads)
+            if idx:
+                del threads[idx]
+            else:
+                time.sleep(1)
+                continue
+
         master = crawler.BackpageCrawler(site, [], data_handler, area,
                                          eng, 6, 1)
 
         threads.append(master)
         master.start()
+
     for t in threads:
         t.join()
