@@ -25,8 +25,12 @@ This is the core web crawler that will be used for the human trafficking project
 
 ## Running
 
-### Start Mongo Server
-??
+### Start a MongoMD or PostgreSQL Server
+
+Install MongoDB or PostgreSQL and use the
+[`PostgreSQLDump`](https://gitlab.com/atl-ads/palantiri/blob/master/src/core/datahandler.py#L78) or
+[`MongoDBDump`](https://gitlab.com/atl-ads/palantiri/blob/master/src/core/datahandler.py$L152) class
+to store the collected data in a database.
 
 
 ### Scrape
