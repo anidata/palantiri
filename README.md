@@ -16,7 +16,8 @@ This is the core web crawler that will be used for the human trafficking project
   # build
   cd palantiri
   
-  # install pip; anaconda python package is easiest way to do this https://www.continuum.io/downloads
+  # Make sure you are using python3, then use pip to install dependencies
+  # The anaconda package and version manager is easiest way to do this https://www.continuum.io/downloads
   pip install -e .
 
   # test
