@@ -6,6 +6,7 @@ from setuptools import setup, Extension, find_packages
 
 util_module = Extension(name = "util", sources = ["palantiri/ext/util.c"])
 
+# TODO: Added package requirements
 setup(
         name="palantiri",
         version="0.0.1",
