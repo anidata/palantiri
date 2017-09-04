@@ -201,8 +201,8 @@ class BackpageContinuousCrawler(BackpageCrawler):
             if not re.search(self.baseurl, href):
                 continue
 
-            cur = self.dbhandler.find_by_id(href).limit(1)
-            if not href in self.to_visit and not cur.count():
+            res = self.dbhandler.find_by_id(href)
+            if not href in self.to_visit and not res:
                 valid.append(href)
 
         self.to_visit.extend(valid)
@@ -220,6 +220,7 @@ class BackpageContinuousCrawler(BackpageCrawler):
 
         old_listing_cnt = -1
         while url and new_listing_cnt != old_listing_cnt:
+            logging.info("Fetching %s" % url)
             site = self.eng.get_page_source(url)
             if site:
                 soup = BeautifulSoup(site.source, "lxml")

@@ -20,6 +20,7 @@
 
 import datetime
 import getpass
+import logging
 import re
 import json
 import threading
@@ -44,9 +45,9 @@ class DataHandler(threading.Thread):
         self.insert_evt.set()
 
     def add_page(self, page):
+        # FIXME; Crawler Id hardcoded
         self.to_dump.append(
-            (page.url, page.source, page.access_datetime,
-             page.response_code, json.dumps(dict(page.headers)))
+            (page.url, page.source, page.access_datetime, 2)
         )
         if len(self.to_dump) > self.batch_size:
             self.insert_evt.set()
@@ -88,21 +89,22 @@ class PostgreSQLDump(DataHandler):
 
     def dump(self, to_insert):
         cur = self.conn.cursor()
-        cur.executemany(("INSERT INTO page(url, content, datescraped, status_code, headers) "
-                         "VALUES (%s, %s, %s, %s, %s) "
-                         "ON CONFLICT (url) DO NOTHING;"),
+        logging.info("************* Saving %d pages to DB" % len(to_insert))
+        cur.executemany(("INSERT INTO page(url, content, datescraped, CrawlerId) "
+                         "VALUES (%s, %s, %s, %s) ;"),
                         to_insert)
         cur.close()
         self.conn.commit()
 
     def find_by_id(self, _id, attempt = 0):
-        try:
-            cur = self.conn.cursor()
-            cur.execute(
-            """SELECT id FROM page WHERE url = '{}'""".format(_id)
-                )
-            return cur.fetchone() is not None
-        except (psycopg2.IntegrityError, psycopg2.InternalError):
-            if attempt < 5:
-                return self.find_by_id(_id, attempt + 1)
-            return None
+        with self.conn.cursor() as cur:
+            try:
+                cur.execute(
+                """SELECT id FROM page WHERE url = '{}'""".format(_id)
+                    )
+                return cur.fetchone()
+            except (psycopg2.IntegrityError, psycopg2.InternalError) as err:
+                if attempt < 5:
+                    return self.find_by_id(_id, attempt + 1)
+                else:
+                    raise err

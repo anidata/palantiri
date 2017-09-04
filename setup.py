@@ -21,17 +21,31 @@
 from setuptools import setup, Extension, find_packages
 
 # TODO: Added package requirements
+test_requirements = [
+    "nose",
+    "nose-watch"
+]
+
 setup(
-        name="palantiri",
-        version="0.0.1",
-        description="Crawler to find data on adds involving human trafficking",
-        author="Anidata",
-        author_email="info@anidata.org",
-        license="BSD",
-        packages=find_packages(),
-        install_requires=["beautifulsoup4 == 4.4.1",
-                          "pymongo == 3.2",
-                          "selenium == 2.49.2",
-                          "stem == 1.4.0",
-                          "psycopg2 == 2.6.1"]
-        )
+    name="palantiri",
+    version="0.0.1",
+    description="Crawler to find data on adds involving human trafficking",
+    author="Anidata",
+    author_email="info@anidata.org",
+    license="BSD",
+    packages=find_packages(),
+    install_requires=["beautifulsoup4==4.4.1",
+                      "pymongo==3.2",
+                      "selenium==2.49.2",
+                      "stem==1.4.0",
+                      "psycopg2==2.6.1",
+                      "lxml",
+                      "anidata-rasp==0.0.1"],
+    dependency_links=[
+        "https://github.com/anidata/rasp/tarball/master#egg=anidata-rasp-0.0.1",
+    ],
+    test_requires=test_requirements,
+    extras_require={
+        'tests': test_requirements,
+    }
+)

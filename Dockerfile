@@ -11,7 +11,7 @@ COPY . /palantiri/
 # Install the dependencies and the palantiri package using setup.py,
 # copy the search script to the root directory and delete /palantiri
 # to keep the image slim
-RUN pip install /palantiri \
+RUN pip install /palantiri --process-dependency-links --allow-all-external \
     && cp /palantiri/search.py . \
     && rm -rf /palantiri
 
