@@ -1,13 +1,9 @@
-# This Source Code Form is subject to the terms of the Mozilla Public
-# License, v. 2.0. If a copy of the MPL was not distributed with this
-# file, You can obtain one at http://mozilla.org/MPL/2.0/.
-
 import getpass
 import time
 import logging
 logging.basicConfig(level=logging.DEBUG)
 
-from palantiri.core import engine, crawler, datahandler
+from palantiri.core import crawler, datahandler
 
 areas = [
         # "albanyga",
@@ -49,7 +45,6 @@ sites = [
 user = input("PostgreSQL Username: ")
 pwd = getpass.getpass("PostgreSQL Password: ")
 page_wait_time = 1
-eng = engine.DefaultEngine()
 
 def first_finished(threads):
     for i in range(0, len(threads)):
