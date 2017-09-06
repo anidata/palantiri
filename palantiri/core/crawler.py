@@ -1,6 +1,22 @@
-# This Source Code Form is subject to the terms of the Mozilla Public
-# License, v. 2.0. If a copy of the MPL was not distributed with this
-# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+# Copyright (c) 2017 Anidata
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 
 import datetime
 import logging
@@ -8,64 +24,13 @@ import random
 import re
 import threading
 import time
+from copy import copy
 import urllib.parse
 from bs4 import BeautifulSoup
-import pymongo.errors
+from rasp import DefaultEngine
 
 from . import errors
-from . import common
-from . import engine
-
-# Technically I've read that many operations are thread-safe on Python's
-# list implementation, so this may not be necessary, but I think I'd rather
-# err on the side of caution at least for now
-class SharedList(object):
-    def __init__(self, lst):
-        self.mutex = threading.Lock()
-        self.lst = lst
-        return
-
-    def __contains__(self, val):
-        return val in self.lst
-
-    def __iter__(self):
-        return self.lst.__iter__()
-
-    def pop(self):
-        self.mutex.acquire()
-        try:
-            val = self.lst.pop()
-            self.mutex.release()
-            return val
-        except:
-            if self.mutex.locked():
-                self.mutex.release()
-            return None
-
-    def append(self, val):
-        self.mutex.acquire()
-        try:
-            self.lst.append(val)
-            self.mutex.release()
-            return True
-        except:
-            if self.mutex.locked():
-                self.mutex.release()
-            return None
-
-    def __len__(self):
-        return len(self.lst)
-
-    def extend(self, lst):
-        self.mutex.acquire()
-        try:
-            self.lst.extend(lst)
-            self.mutex.release()
-            return True
-        except:
-            if self.mutex.locked():
-                self.mutex.release()
-            return True
+from .common import SharedList
 
 class EngineWrapper(threading.Thread):
     def __init__(self, parent, group = None, name = None,
@@ -73,7 +38,7 @@ class EngineWrapper(threading.Thread):
         super(EngineWrapper, self).__init__(group = group, name = name,
                 args = args, kwargs = kwargs)
         self.parent = parent
-        self.eng = parent.eng.clone()
+        self.eng = copy(parent.eng)
         self.to_visit = parent.to_visit
         self.stop = parent.stop
         self.delay = parent.delay
@@ -85,11 +50,7 @@ class EngineWrapper(threading.Thread):
                 url = self.to_visit.pop()
                 site = self.eng.get_page_source(url)
                 if url and site:
-                    try:
-                        self.parent.notify(site)
-                    # give the dbs a sec to catch up
-                    except (pymongo.errors.AutoReconnect, pymongo.errors.NotMasterError):
-                        time.sleep(self.delay)
+                    self.parent.notify(site)
             # The parent needs more time to generate more sites.
             # Wait the set delay
                 time.sleep(self.delay)
@@ -98,7 +59,7 @@ class EngineWrapper(threading.Thread):
         return
 
 class SearchCrawler(threading.Thread):
-    def __init__(self, kwds = [], dbhandler = None, eng = engine.DefaultEngine(),
+    def __init__(self, kwds = [], dbhandler = None, eng = DefaultEngine(),
             max_threads = 10, delay = 1, group = None, name = None,
             args = (), kwargs = None):
         super(SearchCrawler, self).__init__(group = group, name = name,
@@ -120,14 +81,15 @@ class SearchCrawler(threading.Thread):
         raise MasterError("get_listings has not been implemented for this class")
 
     def notify(self, message):
-        if isinstance(message, common.Website):
+        if getattr(message, "url", None):
             logging.info("Dumping %s" % str(message.url))
-            threading.Thread(target=self.dbhandler.dump(message))
+            self.dbhandler.add_page(message)
             return True
         else:
             return False
 
     def start_threads(self):
+        self.dbhandler.start()
         for x in range(0, self.max_threads):
             t = EngineWrapper(self)
             self.children.append(t)
@@ -139,7 +101,7 @@ class SearchCrawler(threading.Thread):
 
 class BackpageCrawler(SearchCrawler):
     def __init__(self, site, kwds = [], dbhandler = None, area = "atlanta",
-            eng = engine.DefaultEngine(), max_threads = 10, delay = 1):
+            eng = DefaultEngine(), max_threads = 10, delay = 1):
         self.baseurl = "".join(["http://", area, ".backpage.com/", site, "/"])
         if kwds:
             keywords = " ".join(kwds)
@@ -169,16 +131,12 @@ class BackpageCrawler(SearchCrawler):
             if not re.search(self.baseurl, href):
                 continue
 
-            try:
-                b_isindb = self.dbhandler.find_by_id(href)
-                if not href in self.to_visit and not b_isindb:
-                    valid.append(href)
-                if len(valid) > 100:
-                    self.to_visit.extend(valid)
-                    valid.clear()
-            except (pymongo.errors.AutoReconnect, pymongo.errors.NotMasterError):
-                # try again
-                self.get_listings(soup)
+            b_isindb = self.dbhandler.find_by_id(href)
+            if not href in self.to_visit and not b_isindb:
+                valid.append(href)
+            if len(valid) > 100:
+                self.to_visit.extend(valid)
+                valid.clear()
 
         self.to_visit.extend(valid)
         return
@@ -200,13 +158,14 @@ class BackpageCrawler(SearchCrawler):
         self.stop.set()
         for t in self.children:
             t.join()
+        self.dbhandler.join()
 
 class BackpageContinuousCrawler(BackpageCrawler):
 
     """Continously running version of BackpageCrawler class"""
 
     def __init__(self, site, kwds = None, dbhandler = None, area =
-                 "atlanta", eng = engine.DefaultEngine(), max_threads = 2,
+                 "atlanta", eng = DefaultEngine(), max_threads = 2,
                  delay = 5):
         """TODO: to be defined1.
 
