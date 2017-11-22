@@ -160,6 +160,82 @@ class BackpageCrawler(SearchCrawler):
             t.join()
         self.dbhandler.join()
 
+
+class WebsiteCrawler(SearchCrawler):
+    def __init__(self, site, kwds=[],dbhandler = None,
+            eng = DefaultEngine(), max_threads = 10, delay = 1):
+        self.baseurl = "".join(["http://", site, "/"])
+        self.url = self.baseurl
+        super(WebsiteCrawler, self).__init__(kwds, dbhandler, eng, max_threads, delay)
+
+    def next_page(self, soup):
+        links = soup.find_all("a", href=True)
+        return None
+
+    def get_listings(self, soup):
+        links = soup.find_all("a", href=True)
+        valid = []
+        for link in links:
+            # remove some non-ad links
+            if link.has_attr("class"):
+                continue
+
+            href = str(urllib.parse.urljoin(self.baseurl, link["href"]))
+            # remove urls that are not on the same site
+            if not re.search(self.baseurl, href):
+                continue
+
+            b_isindb = self.dbhandler.find_by_id(href)
+            if not href in self.to_visit and not b_isindb:
+                valid.append(href)
+            if len(valid) > 100:
+                self.to_visit.extend(valid)
+                valid.clear()
+
+        self.to_visit.extend(valid)
+        return
+
+    def run(self):
+        self.start_threads()
+        time.sleep(self.delay)
+        url = self.url
+        new_listing_cnt = 0
+
+        # TODO: These should be configurable, not hard coded
+        self.max_retry = 3
+        retry = 0
+
+        old_listing_cnt = -1
+        while url and new_listing_cnt != old_listing_cnt:
+            logging.info("Fetching %s" % url)
+            site = self.eng.get_page_source(url)
+            if site:
+                soup = BeautifulSoup(site.source, "lxml")
+                valid_listings = self.get_listings(soup)
+                new_listing_cnt += len(valid_listings)
+
+                url = valid_listings.pop()
+            else:
+                if old_listing_cnt == new_listing_cnt:
+                    retry += 1
+                else:
+                    retry = 0
+
+                old_listing_cnt = new_listing_cnt
+                if retry <= self.max_retry:
+                    url = self.url
+                    retry_delay = 10 * self.delay
+                    logging.info("Waiting %d seconds to retry" % retry_delay)
+                    time.sleep(retry_delay)
+                else:
+                    logging.info("Tried %d times without new results" % retry)
+                    url = None
+
+        self.stop.set()
+        for t in self.children:
+            t.join()
+
+
 class BackpageContinuousCrawler(BackpageCrawler):
 
     """Continously running version of BackpageCrawler class"""
