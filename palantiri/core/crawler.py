@@ -170,30 +170,28 @@ class WebsiteCrawler(SearchCrawler):
 
     def next_page(self, soup):
         links = soup.find_all("a", href=True)
-        return None
 
     def get_listings(self, soup):
         links = soup.find_all("a", href=True)
         valid = []
         for link in links:
-            # remove some non-ad links
-            if link.has_attr("class"):
+            # Skip anchor links
+            if link["href"][0] == "#":
                 continue
 
             href = str(urllib.parse.urljoin(self.baseurl, link["href"]))
             # remove urls that are not on the same site
-            if not re.search(self.baseurl, href):
+            if href[:len(self.baseurl)] != self.baseurl:
                 continue
 
-            b_isindb = self.dbhandler.find_by_id(href)
-            if not href in self.to_visit and not b_isindb:
+            url_in_db = self.dbhandler.find_by_id(href)
+            if not href in self.to_visit and not url_in_db:
                 valid.append(href)
             if len(valid) > 100:
                 self.to_visit.extend(valid)
                 valid.clear()
 
         self.to_visit.extend(valid)
-        return
 
     def run(self):
         self.start_threads()
